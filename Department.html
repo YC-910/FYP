@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Add Department | Healthcare Facility Recommendation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  min-height: 100vh; /* allow full scroll */
+  overflow-y: auto;  /* enable outer scroll */
+  display: flex;
+}
+
+/* ✅ LEFT SIDEBAR NAVBAR */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.5rem 1rem;
+  box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+  z-index: 10;
+}
+
+.navbar .logo {
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  width: 100%;
+  padding-left: 10px;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  width: 100%;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: background 0.3s;
+}
+
+.nav-links a:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Hamburger menu */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.hamburger span {
+  background: white;
+  height: 3px;
+  width: 25px;
+  margin: 4px 0;
+  border-radius: 5px;
+}
+
+/* ✅ MAIN CONTENT */
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* 👈 start from top, not center */
+}
+
+/* ✅ Flipbook */
+.book-container {
+  perspective: 1800px;
+  width: 95%;
+  max-width: 1200px;
+  margin-top: 2rem;
+  margin-bottom: 2rem; /* 👈 allows space for scrolling */
+}
+
+.book {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+}
+
+.book.flipped {
+  transform: rotateY(-180deg);
+}
+
+.page {
+  position: absolute;
+  width: 100%;
+  background: white;
+  padding: 3rem 4rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 64, 128, 0.2);
+  backface-visibility: hidden;
+  box-sizing: border-box;
+  overflow: hidden; /* 👈 prevent inner scroll */
+}
+
+.front { z-index: 2; }
+.back { transform: rotateY(180deg); }
+
+h1 {
+  font-size: 2.3rem;
+  text-align: center;
+  color: #0d47a1;
+  margin-bottom: 2rem;
+  border-bottom: 3px solid #90caf9;
+  padding-bottom: 0.5rem;
+}
+
+/* ✅ Form */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.6rem;
+  color: #0d47a1;
+}
+
+input[type="text"],
+input[type="tel"],
+textarea {
+  font-size: 1.1rem;
+  padding: 0.9rem;
+  width: 100%;
+  border: 2px solid #90caf9;
+  border-radius: 10px;
+  background: #f8fbff;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+button {
+  width: 100%;
+  padding: 1.2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #1565c0;
+  transform: scale(1.02);
+}
+
+/* ✅ Responsive */
+@media (max-width: 900px) {
+  .navbar {
+    width: 220px;
+    transform: translateX(-100%);
+    position: fixed;
+  }
+
+  .navbar.active {
+    transform: translateX(0);
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .page {
+    padding: 2rem;
+    height: auto;
+  }
+
+  h1 {
+    font-size: 1.7rem;
+  }
+}
+</style>
+
+</head>
+
+<body>
+<!-- ✅ Sidebar Navigation -->
+<nav class="navbar" id="navbar">
+  <div class="logo">🏥 Healthcare</div>
+  <div class="nav-links">
+    <a href="/index">🏠 Home</a>
+    <a href="/Hospital">🏢 Add Hospital</a>
+    <a href="/Department">🏢 Add State Department</a>
+    <a href="/Labotary">🏢 Add Public Healthcare Labotary</a>
+    <a href="/Welcome">🔐 LogOut</a>
+  </div>
+</nav>
+
+<!-- ✅ Hamburger -->
+<div class="hamburger" onclick="toggleMenu()">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
+<!-- ✅ Main Section -->
+<div class="main-content">
+  <div class="book-container">
+    <div class="book" id="book">
+
+      <!-- Front Page: Add Department Form -->
+      <div class="page front">
+        <h1>🏢 Add New Department</h1>
+        <form id="addDepartmentForm">
+
+          <div class="form-group">
+            <label for="department_name">Department Name</label>
+            <input type="text" id="department_name" name="department_name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="state">State</label>
+            <input type="text" id="state" name="state" required>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address</label>
+            <textarea id="address" name="address" autocomplete="street-address" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="phone_no">Phone No</label>
+            <input type="tel" id="phone_no" name="phone_no" required>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Location (Google Maps / Coordinates)</label>
+            <input type="text" id="location" name="location" required>
+          </div>
+
+          <div class="form-group">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" required>
+          </div>
+
+          <button type="submit">💾 Save Department</button>
+        </form>
+      </div>
+
+      <!-- Back Page: Confirmation -->
+      <div class="page back">
+        <h1>✅ Department Added</h1>
+        <div id="confirmation"></div>
+        <button onclick="flipBack()">⬅ Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleMenu() {
+  document.getElementById("navbar").classList.toggle("active");
+}
+
+function flipToConfirmation(message) {
+  document.getElementById('confirmation').innerHTML = `<p>${message}</p>`;
+  document.getElementById('book').classList.add('flipped');
+}
+
+function flipBack() {
+  document.getElementById('book').classList.remove('flipped');
+}
+
+document.getElementById('addDepartmentForm').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const departmentData = {
+    name: document.getElementById('department_name').value.trim(),
+    state: document.getElementById('state').value.trim(),
+    address: document.getElementById('address').value.trim(),
+    phone_no: document.getElementById('phone_no').value.trim(),
+    location: document.getElementById('location').value.trim(),
+    website: document.getElementById('website').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/add-department', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(departmentData)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 200) {
+      flipToConfirmation("✅ " + data.message);
+      document.getElementById('addDepartmentForm').reset();
+      setTimeout(() => { flipBack(); }, 1000);
+    } else if (res.status === 409) {
+      flipToConfirmation("⚠️ " + data.message);
+    } else {
+      flipToConfirmation(`❌ Failed to save department. ${data.error || 'Please try again.'}`);
+    }
+  } catch (err) {
+    flipToConfirmation("❌ Network error. Please check connection.");
+  }
+});
+</script>
+</body>
+</html>

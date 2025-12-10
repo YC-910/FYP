@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Disease Prediction Dashboard</title>
+
+<!-- Choices.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css" />
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  min-height: 100vh;
+  overflow-y: auto;
+  display: flex;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.navbar .logo { font-weight: 700; font-size: 1.8rem; margin-bottom: 2rem; }
+.nav-links { display: flex; flex-direction: column; gap: 1.4rem; }
+.nav-links a { color: white; text-decoration: none; font-weight: 600; padding: 1rem 1.2rem; border-radius: 8px; font-size: 1.1rem; transition: background 0.3s; }
+.nav-links a:hover { background: rgba(255, 255, 255, 0.2); }
+
+.hamburger { display: none; flex-direction: column; cursor: pointer; position: absolute; top: 1rem; right: 1rem; }
+.hamburger span { background: white; height: 3px; width: 25px; margin: 4px 0; border-radius: 5px; }
+
+.main-content { flex: 1; margin-left: 250px; padding: 2rem; display: flex; justify-content: center; align-items: flex-start; }
+.dashboard-container { width: 100%; max-width: 900px; background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 40px rgba(0, 64, 128, 0.2); }
+
+h1 { font-size: 2rem; text-align: center; color: #0d47a1; margin-bottom: 1.5rem; border-bottom: 3px solid #90caf9; padding-bottom: 0.5rem; }
+
+.form-group { margin-bottom: 1.5rem; }
+label { font-size: 1.1rem; font-weight: 600; display: block; margin-bottom: 0.6rem; color: #0d47a1; }
+select { font-size: 1.1rem; padding: 0.8rem; width: 100%; border: 2px solid #90caf9; border-radius: 10px; background: #f8fbff; box-sizing: border-box; }
+
+button { width: 100%; padding: 1rem; font-size: 1.2rem; font-weight: bold; background: #1976d2; color: white; border: none; border-radius: 10px; cursor: pointer; transition: 0.3s; }
+button:hover { background: #1565c0; transform: scale(1.02); }
+
+#resultsContainer { margin-top: 2rem; display: none; flex-direction: column; align-items: center; gap: 2rem; }
+
+.counter-container { display: flex; justify-content: space-around; margin-bottom: 1.5rem; font-weight: 600; }
+.counter-container div { background: #e3f2fd; padding: 1rem 1.5rem; border-radius: 10px; text-align: center; flex: 1; margin: 0 0.5rem; color: #0d47a1; font-size: 1.2rem; }
+
+canvas { max-width: 700px; width: 100%; }
+
+@media (max-width: 900px) {
+  .navbar { width: 220px; transform: translateX(-100%); position: fixed; }
+  .navbar.active { transform: translateX(0); }
+  .hamburger { display: flex; }
+  .main-content { margin-left: 0; width: 100%; padding: 1rem; }
+}
+</style>
+</head>
+
+<body>
+<nav class="navbar" id="navbar">
+  <div class="logo">🏥 Healthcare</div>
+  <div class="nav-links">
+    <a href="/Predictive">📊 Disease Prediction</a>
+    <a href="/Patient">🏠 Hospital Searcher</a>
+    <a href="/Welcome">🔐 Back</a>
+  </div>
+</nav>
+
+<div class="hamburger" onclick="toggleMenu()">
+  <span></span><span></span><span></span>
+</div>
+
+<div class="main-content">
+  <div class="dashboard-container">
+    <h1>Disease Prediction Dashboard</h1>
+
+    <div class="form-group">
+      <label for="symptoms">Select Symptoms</label>
+      <select id="symptoms" multiple></select>
+    </div>
+
+    <button id="predictBtn">Predict Diseases</button>
+
+    <div class="counter-container">
+      <div>Total Symptoms Selected: <span id="symptomCount">0</span></div>
+      <div>Total Predicted Diseases: <span id="diseaseCount">0</span></div>
+    </div>
+
+    <div id="resultsContainer">
+      <h2>Predicted Diseases (Pie Chart)</h2>
+      <canvas id="pieChart"></canvas>
+
+      <h2 style="margin-top:2rem;">Top 5 Disease Probability Trend</h2>
+      <canvas id="trendChart"></canvas>
+
+      <h2 style="margin-top:2rem;">Top 5 Predicted Diseases</h2>
+      <canvas id="top5Chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Choices.js script -->
+<script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+<script>
+let symptomChoices;
+let pieChart, top5Chart, top10Chart, trendChart, cumulativeChart;
+
+function toggleMenu() {
+  document.getElementById('navbar').classList.toggle('active');
+}
+
+// Load symptoms from server
+async function loadSymptoms() {
+  try {
+    const res = await fetch('/api/diseases');  
+    const data = await res.json();
+    const dropdown = document.getElementById('symptoms');
+    dropdown.innerHTML = '';
+
+    data.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.diseases;
+      opt.textContent = item.diseases;
+      dropdown.appendChild(opt);
+    });
+
+    if(symptomChoices) symptomChoices.destroy();
+    symptomChoices = new Choices(dropdown, {
+      removeItemButton: true,
+      searchEnabled: true,
+      shouldSort: false,
+      placeholderValue: 'Select your symptoms...',
+      allowHTML: false 
+    });
+
+  } catch(err) {
+    console.error('Error loading symptoms:', err);
+  }
+}
+
+// Predict button click
+document.getElementById('predictBtn').addEventListener('click', async () => {
+  const selectedSymptoms = symptomChoices.getValue(true);
+  document.getElementById('symptomCount').textContent = selectedSymptoms.length;
+
+  if(selectedSymptoms.length < 3){
+    alert('Please select at least 3 symptoms');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symptoms: selectedSymptoms })
+    });
+    const data = await res.json();
+
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+
+    const labels = data.predicted_diseases;
+    const probabilities = data.probabilities;  // decimal probabilities
+
+    document.getElementById('diseaseCount').textContent = labels.length;
+    document.getElementById('resultsContainer').style.display = 'flex';
+
+    // PIE CHART
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    if(pieChart) pieChart.destroy();
+    pieChart = new Chart(pieCtx, {
+      type: 'pie',
+      data: { 
+        labels: labels, 
+        datasets: [{ 
+          data: probabilities, 
+          backgroundColor: labels.map(() => `hsl(${Math.random()*360},70%,60%)`) 
+        }] 
+      },
+      options: { 
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const pct = (context.raw * 100).toFixed(2) + '%';
+                return context.label + ': ' + pct;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Top 5 labels and probs (use only once)
+    const top5Labels = labels.slice(0,5);
+    const top5Probs = probabilities.slice(0,5);
+
+    // Trend Chart
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    if(trendChart) trendChart.destroy();
+    trendChart = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: top5Labels,
+        datasets: [{
+          label: 'Probability Trend',
+          data: top5Probs,
+          backgroundColor: 'rgba(255,206,86,0.4)',
+          borderColor: 'rgba(255,206,86,1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, ticks: { callback: val => (val*100).toFixed(1) + '%' } } }
+      }
+    });
+
+    // Top 5 Horizontal Bar Chart
+    const top5Ctx = document.getElementById('top5Chart').getContext('2d');
+    if(top5Chart) top5Chart.destroy();
+    top5Chart = new Chart(top5Ctx, {
+      type: 'bar',
+      data: {
+        labels: top5Labels,
+        datasets: [{
+          label: 'Top 5 Disease Probabilities',
+          data: top5Probs,
+          backgroundColor: 'rgba(255,99,132,0.6)',
+          borderColor: 'rgba(255,99,132,1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        scales: { 
+          x: { beginAtZero: true, ticks: { callback: val => (val*100).toFixed(1) + '%' } } 
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + (context.raw*100).toFixed(2) + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+
+
+  } catch(err){
+    console.error('Error fetching predicted diseases:', err);
+    alert('Error fetching predicted diseases');
+  }
+});
+loadSymptoms();
+</script>
+
+</body>
+</html>
